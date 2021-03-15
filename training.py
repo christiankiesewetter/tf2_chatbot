@@ -36,7 +36,7 @@ UNITS_DECODER = 512
 # Optimizer and Learning Rate
 LEARNING_RATE = 1e-03
 LEARNING_RATE_DECAY = 0.9
-LEARNING_EPOCH_DECAY = 5
+LEARNING_EPOCH_DECAY = 5 # When to reduce the learning rate
 MIN_LEARNING_RATE = 1e-07
 
 # Dropout Rate
