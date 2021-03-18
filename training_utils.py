@@ -11,7 +11,8 @@ def train_step(encoder, decoder, input_sequence, target_sequence,
     loss = 0
     with tf.GradientTape() as tape:
 
-        encoder_output, encoder_hidden_state, encoder_context_state = \
+        encoder_output, encoder_hidden_state, encoder_context_state, \
+        encoder_hidden_state_bw, encoder_context_state_bw = \
                 encoder(input_sequence, encoder_hidden_state)
 
         decoder.attn.setup_memory(encoder_output)
@@ -46,7 +47,8 @@ def validation_step(encoder, decoder, input_sequence, target_sequence,
 
     loss = 0
 
-    encoder_output, encoder_hidden_state, encoder_context_state = \
+    encoder_output, encoder_hidden_state, encoder_context_state, \
+    encoder_hidden_state_bw, encoder_context_state_bw = \
             encoder(input_sequence, encoder_hidden_state)
 
     decoder.attn.setup_memory(encoder_output)

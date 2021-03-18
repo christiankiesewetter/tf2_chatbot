@@ -16,31 +16,34 @@ np.random.seed(42) # What's the Answer?
 # Data #
 CHECKPOINT_DIR = './training_checkpoints'
 BASE_PATH = "./"
-DATASET_PATH = "../../Datasets/cornell movie-dialogs corpus"
-NUM_LINES = None
-VERBOSE = True
-WARMUP = 5
+DATASET_PATH = "../Datasets/cornell movie-dialogs corpus"
 
 # Training #
-EPOCHS = 100
+EPOCHS = 20
 VALIDATION_SPLIT = .15
 
 # Model Hyperparameters #
 BATCH_SIZE = 16
-VOCAB_SIZE = 3000
+VOCAB_SIZE = 3500
 EMBEDDING_DIM_ENCODER = 512
 EMBEDDING_DIM_DECODER = 512
 UNITS_ENCODER = 512
 UNITS_DECODER = 512
 
 # Optimizer and Learning Rate
-LEARNING_RATE = 1e-03
-LEARNING_RATE_DECAY = 0.9
-LEARNING_EPOCH_DECAY = 5 # When to reduce the learning rate
+LEARNING_RATE = 1e-04
+LEARNING_RATE_DECAY = 0.8
+LEARNING_EPOCH_DECAY = 2
 MIN_LEARNING_RATE = 1e-07
 
 # Dropout Rate
 DROPOUT_RATE = 0.2
+
+# CUSTOMIZE
+NUM_LINES = None
+WARMUP = 5
+TRAIN_STEPS_PER_EPOCH = None
+VALID_STEPS_PER_EPOCH = None
 
 ##################################################################
 
@@ -52,7 +55,7 @@ if __name__ == '__main__':
     To recreate the Workflow as described with tf1.x we thus have to replace the
     given parts with the new packages or implementations
     '''
-
+    print('Start Preprocessing', flush=True)
     # Generate and initialize training set
     movie_conversations_file = os.path.join(DATASET_PATH, 'movie_conversations.txt')
     movie_lines_file = os.path.join(DATASET_PATH, 'movie_lines.txt')
@@ -69,12 +72,14 @@ if __name__ == '__main__':
                                     num_lines = NUM_LINES)
 
 
-    # saving Tokenizer
+    # saving
     if not os.path.isdir(CHECKPOINT_DIR):
         os.mkdir(CHECKPOINT_DIR)
 
     with open(os.path.join(CHECKPOINT_DIR, 'tokenizer.pickle'), 'wb') as handle:
         pickle.dump(tokenizer, handle, protocol = pickle.DEFAULT_PROTOCOL)
+
+    print('Tokenizer created...', flush=True)
 
     # Create Randomized Validation Split
     length_entries = questions.shape[0]
@@ -82,12 +87,22 @@ if __name__ == '__main__':
     train_steps_per_epoch = int((length_entries * (1-VALIDATION_SPLIT)) / BATCH_SIZE)
     valid_steps_per_epoch = int((length_entries * VALIDATION_SPLIT) / BATCH_SIZE)
 
+    # If customized
+    if TRAIN_STEPS_PER_EPOCH is not None:
+        train_steps_per_epoch = TRAIN_STEPS_PER_EPOCH
+
+    if VALID_STEPS_PER_EPOCH is not None:
+        valid_steps_per_epoch = VALID_STEPS_PER_EPOCH
+
+
     # pick from random numbers 15%
     entry_idx = np.arange(0,length_entries)
     np.random.shuffle(entry_idx)
 
     val_idx = entry_idx[:int(length_entries * VALIDATION_SPLIT)]
     train_idx = entry_idx[int(length_entries * VALIDATION_SPLIT):]
+
+    print('Creating Keras Datasets', flush=True)
 
     ds_training = tf.data.Dataset.zip((
             tf.data.Dataset.from_tensor_slices(questions[train_idx]),
@@ -101,7 +116,7 @@ if __name__ == '__main__':
 
 
     # Generate Models
-    ### SEE : model.py
+    ##### SEE : model.py
     encoder = Encoder(
                 vocab_size = VOCAB_SIZE,
                 embedding_dims = EMBEDDING_DIM_ENCODER,
@@ -139,8 +154,8 @@ if __name__ == '__main__':
                                      decoder = decoder)
 
 
-    print(f'Begin Training... {length_entries} Entries, divided into {train_steps_per_epoch} Steps per Training Epoch')
-    print(f'Sequence Length Input/Output {questions.shape[1]}/{answers.shape[1]}')
+    print(f'Begin Training... {length_entries} Entries, divided into {train_steps_per_epoch} Steps per Training Epoch', flush=True)
+    print(f'Sequence Length Input/Output {questions.shape[1]}/{answers.shape[1]}', flush=True)
 
 
     ### TRAINING
@@ -151,6 +166,7 @@ if __name__ == '__main__':
         encoder_hidden_state = encoder.initialize_hidden_state()
 
         for (batch_index, (in_seq, out_seq)) in enumerate(ds_training.take(train_steps_per_epoch)):
+
             batch_time = time.time()
             batch_loss = train_step(
                             encoder = encoder,
@@ -164,33 +180,29 @@ if __name__ == '__main__':
 
             avg_train_loss += batch_loss / train_steps_per_epoch
 
-            if VERBOSE:
-                print(f'''
-                Epoch {epoch + 1} - Step {batch_index + 1}/{train_steps_per_epoch} - {(time.time() - batch_time):.1f}s
-                Loss: {batch_loss.numpy():.4f}
-                Next Learning Rate: {optimizer._decayed_lr(tf.float32):.8f}''')
+            if batch_index % 500 == 0:
+                print(f'Epoch {epoch + 1}/{EPOCHS} - Step {batch_index + 1}/{train_steps_per_epoch} - {(time.time() - batch_time):.1f}s', flush=True)
+                print(f'Loss: {batch_loss.numpy():.4f} - Next Learning Rate: {optimizer._decayed_lr(tf.float32):.8f}', flush=True)
 
-
-        print(f'Training:\tEpoch {epoch + 1} AVGLoss: {avg_train_loss:.4f} - {(time.time() - start):.1f} s')
+        print(f'Training:\tEpoch {epoch + 1}/{EPOCHS} AVGLoss: {avg_train_loss:.4f} - {(time.time() - start)/60:.1f} min', flush=True)
 
         ### Validation ###
         avg_valid_loss = 0
+        val_encoder_hidden_state = encoder.initialize_hidden_state()
         for (batch_index, (in_seq, out_seq)) in enumerate(ds_training.take(valid_steps_per_epoch)):
             validation_batch_loss = validation_step(
                                         encoder = encoder,
                                         decoder = decoder,
                                         input_sequence = in_seq,
                                         target_sequence = out_seq,
-                                        encoder_hidden_state = encoder_hidden_state,
+                                        encoder_hidden_state = val_encoder_hidden_state,
                                         optimizer = optimizer,
                                         batch_size = BATCH_SIZE)
 
             avg_valid_loss += validation_batch_loss / valid_steps_per_epoch
 
-        print(f'Validation:\tEpoch {epoch + 1} AVGLoss: {avg_valid_loss:.4f}')
+        print(f'Validation:\tEpoch {epoch + 1}/{EPOCHS} AVGLoss: {avg_valid_loss:.4f}', flush=True)
 
-        # Save Checkpoints after Warmup and if avg validation is better than before
-        # 'I speak better now' :)
         if min_epoch_loss > avg_valid_loss and epoch > WARMUP:
             min_epoch_loss = avg_valid_loss
             checkpoint.save(file_prefix = checkpoint_prefix)

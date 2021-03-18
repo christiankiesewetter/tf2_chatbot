@@ -3,7 +3,7 @@ import tensorflow as tf
 import tensorflow_addons as tfa
 from tensorflow_addons.seq2seq import BasicDecoder, AttentionWrapper, BahdanauAttention
 from tensorflow_addons.seq2seq.sampler import TrainingSampler, GreedyEmbeddingSampler
-from tensorflow.keras.layers import Input, Dense, LSTM, LSTMCell, Embedding
+from tensorflow.keras.layers import Input, Dense, LSTM, LSTMCell, Embedding, Bidirectional
 
 ###################
 # Another very nice explanation on what is being done here:
@@ -19,19 +19,21 @@ class Encoder(tf.keras.Model):
         self.batch_size = batch_size
         self.enc_units = encoder_units
         self.embedding = Embedding(vocab_size, embedding_dims)
-        self.lstm_layer = LSTM(self.enc_units,
+        self.lstm_layer = Bidirectional(LSTM(self.enc_units,
                                return_sequences=True,
                                return_state=True,
                                dropout = dropout,
-                               recurrent_initializer='glorot_uniform')
+                               recurrent_initializer='glorot_uniform'), merge_mode='sum')
 
     def call(self, x, hidden):
         x = self.embedding(x)
-        output, h, c = self.lstm_layer(x, initial_state = hidden)
-        return output, h, c
+        output, h_fw, c_fw, h_bw, c_bw = self.lstm_layer(x, initial_state = hidden)
+        return output, h_fw, c_fw, h_bw, c_bw
 
     def initialize_hidden_state(self):
         return [tf.zeros((self.batch_size, self.enc_units)),
+                tf.zeros((self.batch_size, self.enc_units)),
+                tf.zeros((self.batch_size, self.enc_units)),
                 tf.zeros((self.batch_size, self.enc_units))]
 
 
@@ -52,7 +54,7 @@ class Decoder(tf.keras.Model):
 
 
         self.sampler = TrainingSampler() # Enables Teacher Forcing.
-        
+
         self.attn = BahdanauAttention(
                         units = self.dec_units,
                         memory = None,
