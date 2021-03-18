@@ -19,7 +19,7 @@ BASE_PATH = "./"
 DATASET_PATH = "../Datasets/cornell movie-dialogs corpus"
 
 # Training #
-EPOCHS = 20
+EPOCHS = 100
 VALIDATION_SPLIT = .15
 
 # Model Hyperparameters #
