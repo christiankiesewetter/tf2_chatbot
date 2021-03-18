@@ -64,10 +64,9 @@ class InferenceModel:
         input_sequence = self.tokenizer.texts_to_sequences([input_sequence])
 
         input_sequence = tf.constant(input_sequence)
-        enc_start_state = [tf.zeros((self.batch_size, self.units)),  # _h
-                            tf.zeros((self.batch_size, self.units))]  # _c
+        enc_start_state = self.encoder.initialize_hidden_state()
 
-        enc_out, enc_h, enc_c = self.encoder(input_sequence, enc_start_state)
+        enc_out, enc_h, enc_c, _, _ = self.encoder(input_sequence, enc_start_state)
 
         dec_h = enc_h
         dec_c = enc_c
