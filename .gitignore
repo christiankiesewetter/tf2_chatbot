@@ -130,3 +130,6 @@ dmypy.json
 
 # checkpoints
 training_checkpoints
+
+# Mac Artifacts
+.DS_Store
