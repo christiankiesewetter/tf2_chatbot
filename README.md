@@ -25,7 +25,7 @@ If you don't want to use my pickled tokenizer (which i totally would understand)
 ### Parameters
 * Steps per Epoch are adjusted so that, every epoch trains on all batches of the training dataset. Therefore there's no static variable for steps per epoch. Feel free to try out less steps per epoch, by changing
 * TRAIN_STEPS_PER_EPOCH / VALID_STEPS_PER_EPOCH - steps that are evaluated per epoch - leave None, if you want to use the whole train/validation set
-* I reduced the Batch Size, so my GPU wouldn't start barking because of lacking resources (feel free to play around). For that reason the initial learning rate is set up lower as well (avoid overfitting on small batches).
+* I reduced the Batch Size, so my GPU wouldn't start barking because of lacking resources (feel free to play around).
 * WARMUP - Epochs to wait before first checkpoint saving
 * NUM_LINES - number of questions and answers used. Leave as None if you want to use the entire dataset.
 * VERBOSE - True: show loss output for every batch, False: show AVG Batch Epoch loss only.
@@ -56,3 +56,6 @@ If you don't want to use my pickled tokenizer (which i totally would understand)
 * [ ] Get Course Leaders Confirmation that this is no BS :)
 
 * [ ] Use BeamSearch
+
+
+steps per epoch = entries / batch size
