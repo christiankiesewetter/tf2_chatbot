@@ -3,6 +3,7 @@ import os
 import tensorflow as tf
 import pickle
 from model import Encoder, Decoder
+from preprocessing2 import preformat
 import tensorflow_addons as tfa
 from tensorflow.keras.preprocessing.sequence import pad_sequences
 from tensorflow_addons.seq2seq import BasicDecoder, AttentionWrapper, BahdanauAttention
@@ -14,7 +15,6 @@ from tensorflow.keras.optimizers import Adam
 class InferenceModel:
     def __init__(self,
                 checkpoint_dir,
-                vocab_size,
                 embedding_dim,
                 units,
                 input_length,
@@ -30,13 +30,13 @@ class InferenceModel:
             self.tokenizer = pickle.load(handle)
 
         self.encoder = Encoder(
-                    vocab_size = vocab_size,
+                    vocab_size = self.tokenizer.num_words,
                     embedding_dims = embedding_dim,
                     encoder_units = units,
                     batch_size = batch_size)
 
         self.decoder = Decoder(
-                    vocab_size = vocab_size,
+                    vocab_size = self.tokenizer.num_words,
                     embedding_dims = embedding_dim,
                     decoder_units = units,
                     batch_size = batch_size,
@@ -60,14 +60,16 @@ class InferenceModel:
 
 
     def __call__(self, input_sequence):
-        input_sequence = '<sos> ' + input_sequence + ' <eos>'
+        input_sequence = preformat(input_sequence)
         input_sequence = self.tokenizer.texts_to_sequences([input_sequence])
 
         input_sequence = tf.constant(input_sequence)
         enc_start_state = [tf.zeros((self.batch_size, self.units)),  # _h
-                            tf.zeros((self.batch_size, self.units))]  # _c
+                           tf.zeros((self.batch_size, self.units)), # _c
+                           tf.zeros((self.batch_size, self.units)),  # _hbw
+                           tf.zeros((self.batch_size, self.units))]  # _cbw
 
-        enc_out, enc_h, enc_c = self.encoder(input_sequence, enc_start_state)
+        enc_out, enc_h, enc_c, enc_hbw, enc_cbw = self.encoder(input_sequence, enc_start_state)
 
         dec_h = enc_h
         dec_c = enc_c
@@ -84,13 +86,12 @@ class InferenceModel:
                                             [dec_h, dec_c],
                                             tf.float32)
 
-        outputs, state, lengths = self.decoder_instance(
-                            None,
+        outputs, state, lengths = self.decoder_instance(None,
                             start_tokens = start_tokens,
                             end_token = end_token,
                             initial_state = decoder_initial_state)
 
-        phrase = " ".join([self.tokenizer.index_word[o] for o in outputs.sample_id.numpy()[0] if o != 0])
+        phrase = " ".join([self.tokenizer.index_word[o] for o in outputs.sample_id.numpy()[0] if o != 0 and self.tokenizer.index_word[o] not in ['<out>', '<eos>', '<sos>']])
 
         return phrase, outputs, state, lengths
 
@@ -99,7 +100,6 @@ if __name__ == '__main__':
 
     inference = InferenceModel(
                 checkpoint_dir = './training_checkpoints',
-                vocab_size = 3000,
                 embedding_dim = 512,
                 units = 512,
                 input_length = 382,

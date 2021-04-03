@@ -62,7 +62,7 @@ def dataset(conversations_file, conversation_lines, num_words, num_lines = None)
 
     alltexts = questions + answers
 
-    tokenizer = Tokenizer(num_words=num_words, filters='"#$%&()*+,-/@[\\]^_`{|}~\t\n', oov_token='<out>')
+    tokenizer = Tokenizer(num_words=num_words, oov_token='<out>')
     tokenizer.fit_on_texts(alltexts)
 
     questions = tokenizer.texts_to_sequences(questions)
