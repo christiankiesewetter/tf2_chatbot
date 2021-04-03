@@ -66,10 +66,10 @@ def dataset(conversations_file, conversation_lines, num_words, max_len=50, num_l
     tokenizer.fit_on_texts(alltexts)
 
     questions = tokenizer.texts_to_sequences(questions)
-    questions = pad_sequences(questions, padding='pre', maxlen=None, value = 0) # <pad> => 0
+    questions = pad_sequences(questions, padding='pre', maxlen=max_len, value = 0) # <pad> => 0
 
     answers = tokenizer.texts_to_sequences(answers)
-    answers = pad_sequences(answers, padding='post', maxlen=None, value = 0) # <pad> => 0
+    answers = pad_sequences(answers, padding='post', maxlen=max_len, value = 0) # <pad> => 0
 
     return np.array(questions), np.array(answers), tokenizer
 
