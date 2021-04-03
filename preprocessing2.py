@@ -41,7 +41,7 @@ def read_txt_file(filepath, splitby = None):
     return res
 
 
-def dataset(conversations_file, conversation_lines, num_words, num_lines = None):
+def dataset(conversations_file, conversation_lines, num_words, max_len=50, num_lines = None):
 
     dialogues = read_txt_file(conversations_file, splitby= ' +++$+++ ')
     dialogues = [literal_eval(dialog[3]) for dialog in dialogues]
@@ -66,10 +66,10 @@ def dataset(conversations_file, conversation_lines, num_words, num_lines = None)
     tokenizer.fit_on_texts(alltexts)
 
     questions = tokenizer.texts_to_sequences(questions)
-    questions = pad_sequences(questions, padding='pre', value = 0) # <pad> => 0
+    questions = pad_sequences(questions, padding='pre', maxlen=None, value = 0) # <pad> => 0
 
     answers = tokenizer.texts_to_sequences(answers)
-    answers = pad_sequences(answers, padding='post', value = 0) # <pad> => 0
+    answers = pad_sequences(answers, padding='post', maxlen=None, value = 0) # <pad> => 0
 
     return np.array(questions), np.array(answers), tokenizer
 
