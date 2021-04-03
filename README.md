@@ -50,12 +50,6 @@ If you don't want to use my pickled tokenizer (which i totally would understand)
 
 * [x] Interactive Console Input
 
-* [ ] Check the Legal Stuff Disclaimer and Licenses
-* [ ] Upload to Repository
-
-* [ ] Get Course Leaders Confirmation that this is no BS :)
+* [x] Upload to Repository
 
 * [ ] Use BeamSearch
-
-
-steps per epoch = entries / batch size
