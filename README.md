@@ -18,9 +18,6 @@ There will be a folder created, where the checkpoints are stored.
 ### Inference
 To execute the inference, run <code>python inference.py</code>
 
-I provided my last checkpoint together with a pickled version of my tokenizer.
-If you don't want to use my pickled tokenizer (which i totally would understand), feel free to execute the training.py code including line 77 with unchanged parameters. If you use the original files for training from the Cornell Movie Database Dialogue Dataset, the Tokenizer should most likely give the same results as the pickled one.
-
 ## Changes Compared to Original Implementation
 ### Parameters
 * Steps per Epoch are adjusted so that, every epoch trains on all batches of the training dataset. Therefore there's no static variable for steps per epoch. Feel free to try out less steps per epoch, by changing
